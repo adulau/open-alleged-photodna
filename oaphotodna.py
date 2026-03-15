@@ -5,7 +5,7 @@
 from math import floor, sqrt
 from PIL import Image
 
-DEBUG_LOGGING = True
+DEBUG_LOGGING = False
 
 if DEBUG_LOGGING:
     import binascii
@@ -413,6 +413,17 @@ def process_hash(gradient_grid, grid_step_h, grid_step_v):
 
     return gradient_grid
 
+
+# This is Equation 17 in the paper
+def hash_to_bytes(hash_in):
+    hash_out = []
+    for i in range(len(hash_in)):
+        b = hash_in[i] * 256 / HASH_CLIP_CONST
+        b = clamp(b, 0, 255)
+        b = int(b)
+        hash_out.append(b)
+    return hash_out
+
 # ----- Put it all together -----
 
 
@@ -428,6 +439,8 @@ def compute_hash(filename):
         compute_feature_grid(summed_pixels, im.width, im.height)
     gradient_grid = compute_gradient_grid(feature_grid)
     hash_as_floats = process_hash(gradient_grid, grid_step_h, grid_step_v)
+    hash_as_bytes = hash_to_bytes(hash_as_floats)
+    return hash_as_bytes
 
 
 if __name__ == '__main__':
@@ -435,4 +448,7 @@ if __name__ == '__main__':
     if len(sys.argv) < 2:
         print(f"Usage: {sys.argv[0]} filename")
         sys.exit(-1)
-    compute_hash(sys.argv[1])
+    photo_hash = compute_hash(sys.argv[1])
+
+    hashString = ','.join([str(i) for i in photo_hash])
+    print(hashString)
