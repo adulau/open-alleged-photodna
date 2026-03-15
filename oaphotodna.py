@@ -280,10 +280,10 @@ def compute_gradient_grid(feature_grid):
                     # Compute the gradients. This is Equation 12.
                     # NOTE: You can ignore the phrase "Sobel-like operator".
                     # This here is the exact operator needed.
-                    feat_L = feature_grid[feat_y * 26 + feat_x - 1]
-                    feat_R = feature_grid[feat_y * 26 + feat_x + 1]
-                    feat_U = feature_grid[(feat_y-1) * 26 + feat_x]
-                    feat_D = feature_grid[(feat_y+1) * 26 + feat_x]
+                    feat_L = feature_grid[feat_y * FEATURE_GRID_DIM + feat_x - 1]
+                    feat_R = feature_grid[feat_y * FEATURE_GRID_DIM + feat_x + 1]
+                    feat_U = feature_grid[(feat_y-1) * FEATURE_GRID_DIM + feat_x]
+                    feat_D = feature_grid[(feat_y+1) * FEATURE_GRID_DIM + feat_x]
                     if DEBUG_LOGGING:
                         print(f"vals {feat_L} {feat_R} {feat_U} {feat_D}")
 
@@ -327,41 +327,41 @@ def compute_gradient_grid(feature_grid):
                     # Each set of 4 gradient values is spread into a 2x2 cluster in the gradient grid.
                     if grad_y >= 0:
                         if grad_x >= 0:
-                            grad_out[(grad_y * 6 + grad_x) * 4 + 0] += \
+                            grad_out[(grad_y * GRID_SIZE_HYPERPARAMETER + grad_x) * 4 + 0] += \
                                 (1 - grad_x_residue) * (1 - grad_y_residue) * grad_d_h_pos
-                            grad_out[(grad_y * 6 + grad_x) * 4 + 1] += \
+                            grad_out[(grad_y * GRID_SIZE_HYPERPARAMETER + grad_x) * 4 + 1] += \
                                 (1 - grad_x_residue) * (1 - grad_y_residue) * grad_d_h_neg
-                            grad_out[(grad_y * 6 + grad_x) * 4 + 2] += \
+                            grad_out[(grad_y * GRID_SIZE_HYPERPARAMETER + grad_x) * 4 + 2] += \
                                 (1 - grad_x_residue) * (1 - grad_y_residue) * grad_d_v_pos
-                            grad_out[(grad_y * 6 + grad_x) * 4 + 3] += \
+                            grad_out[(grad_y * GRID_SIZE_HYPERPARAMETER + grad_x) * 4 + 3] += \
                                 (1 - grad_x_residue) * (1 - grad_y_residue) * grad_d_v_neg
                         if grad_x < 5:
-                            grad_out[(grad_y * 6 + grad_x+1) * 4 + 0] += \
+                            grad_out[(grad_y * GRID_SIZE_HYPERPARAMETER + grad_x+1) * 4 + 0] += \
                                 grad_x_residue * (1 - grad_y_residue) * grad_d_h_pos
-                            grad_out[(grad_y * 6 + grad_x+1) * 4 + 1] += \
+                            grad_out[(grad_y * GRID_SIZE_HYPERPARAMETER + grad_x+1) * 4 + 1] += \
                                 grad_x_residue * (1 - grad_y_residue) * grad_d_h_neg
-                            grad_out[(grad_y * 6 + grad_x+1) * 4 + 2] += \
+                            grad_out[(grad_y * GRID_SIZE_HYPERPARAMETER + grad_x+1) * 4 + 2] += \
                                 grad_x_residue * (1 - grad_y_residue) * grad_d_v_pos
-                            grad_out[(grad_y * 6 + grad_x+1) * 4 + 3] += \
+                            grad_out[(grad_y * GRID_SIZE_HYPERPARAMETER + grad_x+1) * 4 + 3] += \
                                 grad_x_residue * (1 - grad_y_residue) * grad_d_v_neg
                     if grad_y < 5:
                         if grad_x >= 0:
-                            grad_out[((grad_y+1) * 6 + grad_x) * 4 + 0] += \
+                            grad_out[((grad_y+1) * GRID_SIZE_HYPERPARAMETER + grad_x) * 4 + 0] += \
                                 (1 - grad_x_residue) * grad_y_residue * grad_d_h_pos
-                            grad_out[((grad_y+1) * 6 + grad_x) * 4 + 1] += \
+                            grad_out[((grad_y+1) * GRID_SIZE_HYPERPARAMETER + grad_x) * 4 + 1] += \
                                 (1 - grad_x_residue) * grad_y_residue * grad_d_h_neg
-                            grad_out[((grad_y+1) * 6 + grad_x) * 4 + 2] += \
+                            grad_out[((grad_y+1) * GRID_SIZE_HYPERPARAMETER + grad_x) * 4 + 2] += \
                                 (1 - grad_x_residue) * grad_y_residue * grad_d_v_pos
-                            grad_out[((grad_y+1) * 6 + grad_x) * 4 + 3] += \
+                            grad_out[((grad_y+1) * GRID_SIZE_HYPERPARAMETER + grad_x) * 4 + 3] += \
                                 (1 - grad_x_residue) * grad_y_residue * grad_d_v_neg
                         if grad_x < 5:
-                            grad_out[((grad_y+1) * 6 + grad_x+1) * 4 + 0] += \
+                            grad_out[((grad_y+1) * GRID_SIZE_HYPERPARAMETER + grad_x+1) * 4 + 0] += \
                                 grad_x_residue * grad_y_residue * grad_d_h_pos
-                            grad_out[((grad_y+1) * 6 + grad_x+1) * 4 + 1] += \
+                            grad_out[((grad_y+1) * GRID_SIZE_HYPERPARAMETER + grad_x+1) * 4 + 1] += \
                                 grad_x_residue * grad_y_residue * grad_d_h_neg
-                            grad_out[((grad_y+1) * 6 + grad_x+1) * 4 + 2] += \
+                            grad_out[((grad_y+1) * GRID_SIZE_HYPERPARAMETER + grad_x+1) * 4 + 2] += \
                                 grad_x_residue * grad_y_residue * grad_d_v_pos
-                            grad_out[((grad_y+1) * 6 + grad_x+1) * 4 + 3] += \
+                            grad_out[((grad_y+1) * GRID_SIZE_HYPERPARAMETER + grad_x+1) * 4 + 3] += \
                                 grad_x_residue * grad_y_residue * grad_d_v_neg
 
     return grad_out
