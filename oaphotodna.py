@@ -468,7 +468,7 @@ def compare_hashes(hash1, hash2, metric='euclidean'):
 def similarity_score(hash1, hash2):
     distance = compare_hashes(hash1, hash2, metric='euclidean')
     max_distance = sqrt(len(hash1) * (255 ** 2))
-
+    return 1.0 - (distance / max_distance)
 
 def compare_images(file1, file2, metric='euclidean'):
     hash1 = compute_hash(file1)
