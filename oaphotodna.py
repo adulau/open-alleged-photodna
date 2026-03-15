@@ -430,6 +430,8 @@ def hash_to_bytes(hash_in):
 def compute_hash(filename):
     # Load image
     im = Image.open(filename)
+    if im.mode != 'RGB':
+        im = im.convert(mode='RGB')
     # Preprocess into summed array
     if not USE_NUMPY:
         summed_pixels = preprocess_pixel_sum(im)
@@ -443,12 +445,40 @@ def compute_hash(filename):
     return hash_as_bytes
 
 
-if __name__ == '__main__':
-    import sys
-    if len(sys.argv) < 2:
-        print(f"Usage: {sys.argv[0]} filename")
-        sys.exit(-1)
-    photo_hash = compute_hash(sys.argv[1])
+def imgnet_test():
+    import base64
+    import csv
 
-    hashString = ','.join([str(i) for i in photo_hash])
-    print(hashString)
+    reference_hashes = {}
+    with open('imgnet_hashes.csv', 'r') as f:
+        csvreader = csv.reader(f)
+        for row in csvreader:
+            filename, hash_b64 = row
+            filename = filename.rsplit('\\', 1)[1]
+            reference_hashes[filename] = hash_b64
+
+    with open('imgnettest.txt', 'w') as f:
+        for i in range(50000):
+            filename = f"ILSVRC2012_val_{i + 1:08}.JPEG"
+            file_path = "/Volumes/ArcaneNibbl/ILSVRC2012_img_val/" + filename
+            photo_hash = base64.b64encode(bytes(compute_hash(file_path))).decode('ascii')
+            expected_hash = reference_hashes[filename]
+            if photo_hash == expected_hash:
+                print(f"{filename}: OK", file=f)
+            else:
+                print(f"{filename}: {expected_hash} {photo_hash}", file=f)
+            f.flush()
+
+# if __name__ == '__main__':
+#     import sys
+#     if len(sys.argv) < 2:
+#         print(f"Usage: {sys.argv[0]} filename")
+#         sys.exit(-1)
+#     photo_hash = compute_hash(sys.argv[1])
+
+#     hashString = ','.join([str(i) for i in photo_hash])
+#     print(hashString)
+
+
+if __name__ == '__main__':
+    imgnet_test()
