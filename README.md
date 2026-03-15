@@ -78,7 +78,7 @@ In the right side of Fig. 2, the light grey grid corresponds to image pixels. I 
 
 Note that 26×26 becomes 24×24 after removing 1 pixel from _each_ side top/bottom/left/right.
 
-The binary processes 6×6 chunks of 4×4 values, but the innermost loop is unrolled. This is why there are 4 identical copies of the inner logic. The coordinates used in the binary match up with the _bottommost_ value of the `+`-shaped gradient operator, but this code here uses the center.
+The binary processes 6×6 chunks of 4×4 values, but the innermost loop is unrolled. This is why there are 4 identical copies of the inner logic. The coordinates used in the binary match up with the _bottommost_ value of the `+`-shaped gradient operator, but this code here uses the center instead. This differs by 1 row.
 
 Gradients are spread into the gradient grid using an "inverse" bilinear interpolation. See the code for details.
 
