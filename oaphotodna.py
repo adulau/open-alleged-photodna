@@ -486,16 +486,16 @@ def imgnet_test():
     p.join()
 
 
-# if __name__ == '__main__':
-#     import sys
-#     if len(sys.argv) < 2:
-#         print(f"Usage: {sys.argv[0]} filename")
-#         sys.exit(-1)
-#     photo_hash = compute_hash(sys.argv[1])
-
-#     hashString = ','.join([str(i) for i in photo_hash])
-#     print(hashString)
-
-
 if __name__ == '__main__':
-    imgnet_test()
+    import sys
+    if len(sys.argv) < 2:
+        print(f"Usage: {sys.argv[0]} filename")
+        sys.exit(-1)
+    photo_hash = compute_hash(sys.argv[1])
+
+    hashString = ','.join([str(i) for i in photo_hash])
+    print(hashString)
+
+
+# if __name__ == '__main__':
+#     imgnet_test()
