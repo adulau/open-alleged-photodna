@@ -445,9 +445,17 @@ def compute_hash(filename):
     return hash_as_bytes
 
 
-def imgnet_test():
+def imgnet_test_inner(i):
     import base64
+    filename = f"ILSVRC2012_val_{i + 1:08}.JPEG"
+    file_path = "/Volumes/ArcaneNibbl/ILSVRC2012_img_val/" + filename
+    photo_hash = base64.b64encode(bytes(compute_hash(file_path))).decode('ascii')
+    return (filename, photo_hash)
+
+
+def imgnet_test():
     import csv
+    import multiprocessing
 
     reference_hashes = {}
     with open('imgnet_hashes.csv', 'r') as f:
@@ -457,17 +465,21 @@ def imgnet_test():
             filename = filename.rsplit('\\', 1)[1]
             reference_hashes[filename] = hash_b64
 
+    p = multiprocessing.Pool()
+    results = []
+    for i in range(50000):
+        results.append(p.apply_async(imgnet_test_inner, [i]))
     with open('imgnettest.txt', 'w') as f:
-        for i in range(50000):
-            filename = f"ILSVRC2012_val_{i + 1:08}.JPEG"
-            file_path = "/Volumes/ArcaneNibbl/ILSVRC2012_img_val/" + filename
-            photo_hash = base64.b64encode(bytes(compute_hash(file_path))).decode('ascii')
+        for x in results:
+            filename, photo_hash = x.get()
             expected_hash = reference_hashes[filename]
             if photo_hash == expected_hash:
                 print(f"{filename}: OK", file=f)
             else:
                 print(f"{filename}: {expected_hash} {photo_hash}", file=f)
             f.flush()
+    p.close()
+    p.join()
 
 
 # if __name__ == '__main__':
