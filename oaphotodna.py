@@ -458,7 +458,7 @@ def compare_hashes(hash1, hash2, metric='euclidean'):
         raise ValueError('Hashes must have the same length')
 
     if metric == 'euclidean':
-        return math.sqrt(sum((a - b) ** 2 for a, b in zip(hash1, hash2)))
+        return sqrt(sum((a - b) ** 2 for a, b in zip(hash1, hash2)))
     if metric == 'manhattan':
         return sum(abs(a - b) for a, b in zip(hash1, hash2))
 
@@ -467,8 +467,7 @@ def compare_hashes(hash1, hash2, metric='euclidean'):
 
 def similarity_score(hash1, hash2):
     distance = compare_hashes(hash1, hash2, metric='euclidean')
-    max_distance = math.sqrt(len(hash1) * (255 ** 2))
-    return 1.0 - (distance / max_distance)
+    max_distance = sqrt(len(hash1) * (255 ** 2))
 
 
 def compare_images(file1, file2, metric='euclidean'):
