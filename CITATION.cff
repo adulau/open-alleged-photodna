@@ -1,0 +1,14 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: open-alleged-photodna
+message: >-
+  If you use this code in your research, consider citing it
+  using the metadata from this file.
+type: software
+authors:
+  - given-names: ArcaneNibble
+    email: rqou@berkeley.edu
+repository-code: 'https://github.com/ArcaneNibble/open-alleged-photodna'
+license: 0BSD
