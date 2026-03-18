@@ -29,6 +29,9 @@ if VALIDATE_BINARY:
     assert hashlib.sha256(ref_binary).hexdigest() == REFERENCE_BINARY_HASH
 
 DEBUG_LOGGING = False
+# If True, adds intermediate value hooks and runs comparisons against our code
+# If False, adds only the minimal hooks and prints the hash (no comparisons)
+DO_HOOKING = True
 
 
 def divroundup(val, div):
@@ -222,159 +225,160 @@ def load_dll():
     pushb(0xC9)                                                         # leave
     pushb(0xC3)                                                         # ret
 
-    # Hook after feature grid is computed   @ 0x19000 + 0x9700
-    i = 0x19000 + 0x9700
-    pushb(0x51)                                                         # push rcx
-    pushb(0x52)                                                         # push rdx
-    pushb(0x56)                                                         # push rsi
-    pushb(0x57)                                                         # push rdi
-    pushb(0x41), pushb(0x50)                                            # push r8
-    pushb(0x41), pushb(0x51)                                            # push r9
-    pushb(0x41), pushb(0x52)                                            # push r10
-    pushb(0x41), pushb(0x53)                                            # push r11
-    pushb(0x48), pushb(0x81), pushb(0xec)                               # sub rsp, 512
-    pushb(0x00), pushb(0x02), pushb(0x00), pushb(0x00)
-    pushb(0x0f), pushb(0xae), pushb(0x04), pushb(0x24)                  # fxsave [rsp]
-    pushb(0x48), pushb(0x89), pushb(0xef)                               # mov rdi, rbp
-    pushb(0x48), pushb(0xb8)                                            # movabs rax, <xxx>
-    hook_after_feature_addr = ctypes.cast(hook_after_feature, ctypes.c_void_p).value
-    pushb((hook_after_feature_addr >> 0) & 0xff)
-    pushb((hook_after_feature_addr >> 8) & 0xff)
-    pushb((hook_after_feature_addr >> 16) & 0xff)
-    pushb((hook_after_feature_addr >> 24) & 0xff)
-    pushb((hook_after_feature_addr >> 32) & 0xff)
-    pushb((hook_after_feature_addr >> 40) & 0xff)
-    pushb((hook_after_feature_addr >> 48) & 0xff)
-    pushb((hook_after_feature_addr >> 56) & 0xff)
-    pushb(0xff), pushb(0xd0)                                            # call rax
-    pushb(0x0f), pushb(0xae), pushb(0x0c), pushb(0x24)                  # fxrstor [rsp]
-    pushb(0x48), pushb(0x81), pushb(0xc4)                               # add rsp, 512
-    pushb(0x00), pushb(0x02), pushb(0x00), pushb(0x00)
-    pushb(0x41), pushb(0x5b)                                            # pop r11
-    pushb(0x41), pushb(0x5a)                                            # pop r10
-    pushb(0x41), pushb(0x59)                                            # pop r9
-    pushb(0x41), pushb(0x58)                                            # pop r8
-    pushb(0x5f)                                                         # pop rdi
-    pushb(0x5e)                                                         # pop rsi
-    pushb(0x5a)                                                         # pop rdx
-    pushb(0x59)                                                         # pop rcx
-    jump_offs = (0xa199 - (i + 5)) & 0xffffffff
-    pushb(0xe9)                                                         # jmp <xxx>
-    pushb((jump_offs >> 0) & 0xff)
-    pushb((jump_offs >> 8) & 0xff)
-    pushb((jump_offs >> 16) & 0xff)
-    pushb((jump_offs >> 24) & 0xff)
-    # Apply the hook (patches a je opcode to jump somewhere else)
-    jump_offs = (0x19000 + 0x9700 - (0x8907 + 6)) & 0xffffffff
-    reserved_addr_buf[0x8907 + 2] = (jump_offs >> 0) & 0xff
-    reserved_addr_buf[0x8907 + 3] = (jump_offs >> 8) & 0xff
-    reserved_addr_buf[0x8907 + 4] = (jump_offs >> 16) & 0xff
-    reserved_addr_buf[0x8907 + 5] = (jump_offs >> 24) & 0xff
+    if DO_HOOKING:
+        # Hook after feature grid is computed   @ 0x19000 + 0x9700
+        i = 0x19000 + 0x9700
+        pushb(0x51)                                                         # push rcx
+        pushb(0x52)                                                         # push rdx
+        pushb(0x56)                                                         # push rsi
+        pushb(0x57)                                                         # push rdi
+        pushb(0x41), pushb(0x50)                                            # push r8
+        pushb(0x41), pushb(0x51)                                            # push r9
+        pushb(0x41), pushb(0x52)                                            # push r10
+        pushb(0x41), pushb(0x53)                                            # push r11
+        pushb(0x48), pushb(0x81), pushb(0xec)                               # sub rsp, 512
+        pushb(0x00), pushb(0x02), pushb(0x00), pushb(0x00)
+        pushb(0x0f), pushb(0xae), pushb(0x04), pushb(0x24)                  # fxsave [rsp]
+        pushb(0x48), pushb(0x89), pushb(0xef)                               # mov rdi, rbp
+        pushb(0x48), pushb(0xb8)                                            # movabs rax, <xxx>
+        hook_after_feature_addr = ctypes.cast(hook_after_feature, ctypes.c_void_p).value
+        pushb((hook_after_feature_addr >> 0) & 0xff)
+        pushb((hook_after_feature_addr >> 8) & 0xff)
+        pushb((hook_after_feature_addr >> 16) & 0xff)
+        pushb((hook_after_feature_addr >> 24) & 0xff)
+        pushb((hook_after_feature_addr >> 32) & 0xff)
+        pushb((hook_after_feature_addr >> 40) & 0xff)
+        pushb((hook_after_feature_addr >> 48) & 0xff)
+        pushb((hook_after_feature_addr >> 56) & 0xff)
+        pushb(0xff), pushb(0xd0)                                            # call rax
+        pushb(0x0f), pushb(0xae), pushb(0x0c), pushb(0x24)                  # fxrstor [rsp]
+        pushb(0x48), pushb(0x81), pushb(0xc4)                               # add rsp, 512
+        pushb(0x00), pushb(0x02), pushb(0x00), pushb(0x00)
+        pushb(0x41), pushb(0x5b)                                            # pop r11
+        pushb(0x41), pushb(0x5a)                                            # pop r10
+        pushb(0x41), pushb(0x59)                                            # pop r9
+        pushb(0x41), pushb(0x58)                                            # pop r8
+        pushb(0x5f)                                                         # pop rdi
+        pushb(0x5e)                                                         # pop rsi
+        pushb(0x5a)                                                         # pop rdx
+        pushb(0x59)                                                         # pop rcx
+        jump_offs = (0xa199 - (i + 5)) & 0xffffffff
+        pushb(0xe9)                                                         # jmp <xxx>
+        pushb((jump_offs >> 0) & 0xff)
+        pushb((jump_offs >> 8) & 0xff)
+        pushb((jump_offs >> 16) & 0xff)
+        pushb((jump_offs >> 24) & 0xff)
+        # Apply the hook (patches a je opcode to jump somewhere else)
+        jump_offs = (0x19000 + 0x9700 - (0x8907 + 6)) & 0xffffffff
+        reserved_addr_buf[0x8907 + 2] = (jump_offs >> 0) & 0xff
+        reserved_addr_buf[0x8907 + 3] = (jump_offs >> 8) & 0xff
+        reserved_addr_buf[0x8907 + 4] = (jump_offs >> 16) & 0xff
+        reserved_addr_buf[0x8907 + 5] = (jump_offs >> 24) & 0xff
 
-    # Hook after gradient grid is computed      @ 0x19000 + 0x9800
-    i = 0x19000 + 0x9800
-    pushb(0x51)                                                         # push rcx
-    pushb(0x52)                                                         # push rdx
-    pushb(0x56)                                                         # push rsi
-    pushb(0x57)                                                         # push rdi
-    pushb(0x41), pushb(0x50)                                            # push r8
-    pushb(0x41), pushb(0x51)                                            # push r9
-    pushb(0x41), pushb(0x52)                                            # push r10
-    pushb(0x41), pushb(0x53)                                            # push r11
-    pushb(0x48), pushb(0x81), pushb(0xec)                               # sub rsp, 512
-    pushb(0x00), pushb(0x02), pushb(0x00), pushb(0x00)
-    pushb(0x0f), pushb(0xae), pushb(0x04), pushb(0x24)                  # fxsave [rsp]
-    pushb(0x48), pushb(0x89), pushb(0xef)                               # mov rdi, rbp
-    pushb(0x48), pushb(0xb8)                                            # movabs rax, <xxx>
-    hook_after_grad_addr = ctypes.cast(hook_after_grad, ctypes.c_void_p).value
-    pushb((hook_after_grad_addr >> 0) & 0xff)
-    pushb((hook_after_grad_addr >> 8) & 0xff)
-    pushb((hook_after_grad_addr >> 16) & 0xff)
-    pushb((hook_after_grad_addr >> 24) & 0xff)
-    pushb((hook_after_grad_addr >> 32) & 0xff)
-    pushb((hook_after_grad_addr >> 40) & 0xff)
-    pushb((hook_after_grad_addr >> 48) & 0xff)
-    pushb((hook_after_grad_addr >> 56) & 0xff)
-    pushb(0xff), pushb(0xd0)                                            # call rax
-    pushb(0x0f), pushb(0xae), pushb(0x0c), pushb(0x24)                  # fxrstor [rsp]
-    pushb(0x48), pushb(0x81), pushb(0xc4)                               # add rsp, 512
-    pushb(0x00), pushb(0x02), pushb(0x00), pushb(0x00)
-    pushb(0x41), pushb(0x5b)                                            # pop r11
-    pushb(0x41), pushb(0x5a)                                            # pop r10
-    pushb(0x41), pushb(0x59)                                            # pop r9
-    pushb(0x41), pushb(0x58)                                            # pop r8
-    pushb(0x5f)                                                         # pop rdi
-    pushb(0x5e)                                                         # pop rsi
-    pushb(0x5a)                                                         # pop rdx
-    pushb(0x59)                                                         # pop rcx
-    jump_offs = (0xb04b - (i + 5)) & 0xffffffff
-    pushb(0xe9)                                                         # jmp <xxx>
-    pushb((jump_offs >> 0) & 0xff)
-    pushb((jump_offs >> 8) & 0xff)
-    pushb((jump_offs >> 16) & 0xff)
-    pushb((jump_offs >> 24) & 0xff)
-    # Apply the hook (patches a jne to an unconditional jump (breaking hyperparameter values other than 6))
-    jump_offs = (0x19000 + 0x9800 - (0xb045 + 6)) & 0xffffffff
-    reserved_addr_buf[0xb045 + 0] = 0x90
-    reserved_addr_buf[0xb045 + 1] = 0xe9
-    reserved_addr_buf[0xb045 + 2] = (jump_offs >> 0) & 0xff
-    reserved_addr_buf[0xb045 + 3] = (jump_offs >> 8) & 0xff
-    reserved_addr_buf[0xb045 + 4] = (jump_offs >> 16) & 0xff
-    reserved_addr_buf[0xb045 + 5] = (jump_offs >> 24) & 0xff
+        # Hook after gradient grid is computed      @ 0x19000 + 0x9800
+        i = 0x19000 + 0x9800
+        pushb(0x51)                                                         # push rcx
+        pushb(0x52)                                                         # push rdx
+        pushb(0x56)                                                         # push rsi
+        pushb(0x57)                                                         # push rdi
+        pushb(0x41), pushb(0x50)                                            # push r8
+        pushb(0x41), pushb(0x51)                                            # push r9
+        pushb(0x41), pushb(0x52)                                            # push r10
+        pushb(0x41), pushb(0x53)                                            # push r11
+        pushb(0x48), pushb(0x81), pushb(0xec)                               # sub rsp, 512
+        pushb(0x00), pushb(0x02), pushb(0x00), pushb(0x00)
+        pushb(0x0f), pushb(0xae), pushb(0x04), pushb(0x24)                  # fxsave [rsp]
+        pushb(0x48), pushb(0x89), pushb(0xef)                               # mov rdi, rbp
+        pushb(0x48), pushb(0xb8)                                            # movabs rax, <xxx>
+        hook_after_grad_addr = ctypes.cast(hook_after_grad, ctypes.c_void_p).value
+        pushb((hook_after_grad_addr >> 0) & 0xff)
+        pushb((hook_after_grad_addr >> 8) & 0xff)
+        pushb((hook_after_grad_addr >> 16) & 0xff)
+        pushb((hook_after_grad_addr >> 24) & 0xff)
+        pushb((hook_after_grad_addr >> 32) & 0xff)
+        pushb((hook_after_grad_addr >> 40) & 0xff)
+        pushb((hook_after_grad_addr >> 48) & 0xff)
+        pushb((hook_after_grad_addr >> 56) & 0xff)
+        pushb(0xff), pushb(0xd0)                                            # call rax
+        pushb(0x0f), pushb(0xae), pushb(0x0c), pushb(0x24)                  # fxrstor [rsp]
+        pushb(0x48), pushb(0x81), pushb(0xc4)                               # add rsp, 512
+        pushb(0x00), pushb(0x02), pushb(0x00), pushb(0x00)
+        pushb(0x41), pushb(0x5b)                                            # pop r11
+        pushb(0x41), pushb(0x5a)                                            # pop r10
+        pushb(0x41), pushb(0x59)                                            # pop r9
+        pushb(0x41), pushb(0x58)                                            # pop r8
+        pushb(0x5f)                                                         # pop rdi
+        pushb(0x5e)                                                         # pop rsi
+        pushb(0x5a)                                                         # pop rdx
+        pushb(0x59)                                                         # pop rcx
+        jump_offs = (0xb04b - (i + 5)) & 0xffffffff
+        pushb(0xe9)                                                         # jmp <xxx>
+        pushb((jump_offs >> 0) & 0xff)
+        pushb((jump_offs >> 8) & 0xff)
+        pushb((jump_offs >> 16) & 0xff)
+        pushb((jump_offs >> 24) & 0xff)
+        # Apply the hook (patches a jne to an unconditional jump (breaking hyperparameter values other than 6))
+        jump_offs = (0x19000 + 0x9800 - (0xb045 + 6)) & 0xffffffff
+        reserved_addr_buf[0xb045 + 0] = 0x90
+        reserved_addr_buf[0xb045 + 1] = 0xe9
+        reserved_addr_buf[0xb045 + 2] = (jump_offs >> 0) & 0xff
+        reserved_addr_buf[0xb045 + 3] = (jump_offs >> 8) & 0xff
+        reserved_addr_buf[0xb045 + 4] = (jump_offs >> 16) & 0xff
+        reserved_addr_buf[0xb045 + 5] = (jump_offs >> 24) & 0xff
 
-    # Hook after hash is computed as floats     @ 0x19000 + 0x9900
-    i = 0x19000 + 0x9900
-    pushb(0x51)                                                         # push rcx
-    pushb(0x52)                                                         # push rdx
-    pushb(0x56)                                                         # push rsi
-    pushb(0x57)                                                         # push rdi
-    pushb(0x41), pushb(0x50)                                            # push r8
-    pushb(0x41), pushb(0x51)                                            # push r9
-    pushb(0x41), pushb(0x52)                                            # push r10
-    pushb(0x41), pushb(0x53)                                            # push r11
-    pushb(0x48), pushb(0x81), pushb(0xec)                               # sub rsp, 512
-    pushb(0x00), pushb(0x02), pushb(0x00), pushb(0x00)
-    pushb(0x0f), pushb(0xae), pushb(0x04), pushb(0x24)                  # fxsave [rsp]
-    pushb(0x48), pushb(0x89), pushb(0xef)                               # mov rdi, rbp
-    pushb(0x48), pushb(0xb8)                                            # movabs rax, <xxx>
-    hook_after_hash_addr = ctypes.cast(hook_after_hash, ctypes.c_void_p).value
-    pushb((hook_after_hash_addr >> 0) & 0xff)
-    pushb((hook_after_hash_addr >> 8) & 0xff)
-    pushb((hook_after_hash_addr >> 16) & 0xff)
-    pushb((hook_after_hash_addr >> 24) & 0xff)
-    pushb((hook_after_hash_addr >> 32) & 0xff)
-    pushb((hook_after_hash_addr >> 40) & 0xff)
-    pushb((hook_after_hash_addr >> 48) & 0xff)
-    pushb((hook_after_hash_addr >> 56) & 0xff)
-    pushb(0xff), pushb(0xd0)                                            # call rax
-    pushb(0x0f), pushb(0xae), pushb(0x0c), pushb(0x24)                  # fxrstor [rsp]
-    pushb(0x48), pushb(0x81), pushb(0xc4)                               # add rsp, 512
-    pushb(0x00), pushb(0x02), pushb(0x00), pushb(0x00)
-    pushb(0x41), pushb(0x5b)                                            # pop r11
-    pushb(0x41), pushb(0x5a)                                            # pop r10
-    pushb(0x41), pushb(0x59)                                            # pop r9
-    pushb(0x41), pushb(0x58)                                            # pop r8
-    pushb(0x5f)                                                         # pop rdi
-    pushb(0x5e)                                                         # pop rsi
-    pushb(0x5a)                                                         # pop rdx
-    pushb(0x59)                                                         # pop rcx
-    pushb(0x4c), pushb(0x8b), pushb(0x85)                               # mov r8, qword [rbp+0x108]
-    pushb(0x08), pushb(0x01), pushb(0x00), pushb(0x00)
-    jump_offs = (0xd8c5 - (i + 5)) & 0xffffffff
-    pushb(0xe9)                                                         # jmp <xxx>
-    pushb((jump_offs >> 0) & 0xff)
-    pushb((jump_offs >> 8) & 0xff)
-    pushb((jump_offs >> 16) & 0xff)
-    pushb((jump_offs >> 24) & 0xff)
-    # Apply the hook (replaces a mov opcode, which is replicated in the code blob above)
-    jump_offs = (0x19000 + 0x9900 - (0xd8be + 5)) & 0xffffffff
-    reserved_addr_buf[0xd8be + 0] = 0xe9
-    reserved_addr_buf[0xd8be + 1] = (jump_offs >> 0) & 0xff
-    reserved_addr_buf[0xd8be + 2] = (jump_offs >> 8) & 0xff
-    reserved_addr_buf[0xd8be + 3] = (jump_offs >> 16) & 0xff
-    reserved_addr_buf[0xd8be + 4] = (jump_offs >> 24) & 0xff
-    reserved_addr_buf[0xd8be + 5] = 0xcc
-    reserved_addr_buf[0xd8be + 6] = 0xcc
+        # Hook after hash is computed as floats     @ 0x19000 + 0x9900
+        i = 0x19000 + 0x9900
+        pushb(0x51)                                                         # push rcx
+        pushb(0x52)                                                         # push rdx
+        pushb(0x56)                                                         # push rsi
+        pushb(0x57)                                                         # push rdi
+        pushb(0x41), pushb(0x50)                                            # push r8
+        pushb(0x41), pushb(0x51)                                            # push r9
+        pushb(0x41), pushb(0x52)                                            # push r10
+        pushb(0x41), pushb(0x53)                                            # push r11
+        pushb(0x48), pushb(0x81), pushb(0xec)                               # sub rsp, 512
+        pushb(0x00), pushb(0x02), pushb(0x00), pushb(0x00)
+        pushb(0x0f), pushb(0xae), pushb(0x04), pushb(0x24)                  # fxsave [rsp]
+        pushb(0x48), pushb(0x89), pushb(0xef)                               # mov rdi, rbp
+        pushb(0x48), pushb(0xb8)                                            # movabs rax, <xxx>
+        hook_after_hash_addr = ctypes.cast(hook_after_hash, ctypes.c_void_p).value
+        pushb((hook_after_hash_addr >> 0) & 0xff)
+        pushb((hook_after_hash_addr >> 8) & 0xff)
+        pushb((hook_after_hash_addr >> 16) & 0xff)
+        pushb((hook_after_hash_addr >> 24) & 0xff)
+        pushb((hook_after_hash_addr >> 32) & 0xff)
+        pushb((hook_after_hash_addr >> 40) & 0xff)
+        pushb((hook_after_hash_addr >> 48) & 0xff)
+        pushb((hook_after_hash_addr >> 56) & 0xff)
+        pushb(0xff), pushb(0xd0)                                            # call rax
+        pushb(0x0f), pushb(0xae), pushb(0x0c), pushb(0x24)                  # fxrstor [rsp]
+        pushb(0x48), pushb(0x81), pushb(0xc4)                               # add rsp, 512
+        pushb(0x00), pushb(0x02), pushb(0x00), pushb(0x00)
+        pushb(0x41), pushb(0x5b)                                            # pop r11
+        pushb(0x41), pushb(0x5a)                                            # pop r10
+        pushb(0x41), pushb(0x59)                                            # pop r9
+        pushb(0x41), pushb(0x58)                                            # pop r8
+        pushb(0x5f)                                                         # pop rdi
+        pushb(0x5e)                                                         # pop rsi
+        pushb(0x5a)                                                         # pop rdx
+        pushb(0x59)                                                         # pop rcx
+        pushb(0x4c), pushb(0x8b), pushb(0x85)                               # mov r8, qword [rbp+0x108]
+        pushb(0x08), pushb(0x01), pushb(0x00), pushb(0x00)
+        jump_offs = (0xd8c5 - (i + 5)) & 0xffffffff
+        pushb(0xe9)                                                         # jmp <xxx>
+        pushb((jump_offs >> 0) & 0xff)
+        pushb((jump_offs >> 8) & 0xff)
+        pushb((jump_offs >> 16) & 0xff)
+        pushb((jump_offs >> 24) & 0xff)
+        # Apply the hook (replaces a mov opcode, which is replicated in the code blob above)
+        jump_offs = (0x19000 + 0x9900 - (0xd8be + 5)) & 0xffffffff
+        reserved_addr_buf[0xd8be + 0] = 0xe9
+        reserved_addr_buf[0xd8be + 1] = (jump_offs >> 0) & 0xff
+        reserved_addr_buf[0xd8be + 2] = (jump_offs >> 8) & 0xff
+        reserved_addr_buf[0xd8be + 3] = (jump_offs >> 16) & 0xff
+        reserved_addr_buf[0xd8be + 4] = (jump_offs >> 24) & 0xff
+        reserved_addr_buf[0xd8be + 5] = 0xcc
+        reserved_addr_buf[0xd8be + 6] = 0xcc
 
     # Patch out __chkstk
     reserved_addr_buf[0xf010] = 0xc3
@@ -420,6 +424,11 @@ def main():
 
     hashPtr = ctypes.cast(hashByteArray, ctypes.POINTER(ctypes.c_ubyte))
     reference_hash = [hashPtr[i] for i in range(144)]
+    print(','.join((str(x) for x in reference_hash)))
+
+    # Skip comparison if we don't have hooks
+    if not DO_HOOKING:
+        return
 
     # Check ours against the reference
     summed_pixels = oaphotodna.preprocess_pixel_sum_(im)
