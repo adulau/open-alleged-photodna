@@ -95,6 +95,12 @@ def preprocess_pixel_sum_np(im):
     return im.flatten()
 
 
+if USE_NUMPY:
+    preprocess_pixel_sum_ = preprocess_pixel_sum_np
+else:
+    preprocess_pixel_sum_ = preprocess_pixel_sum
+
+
 # ----- (3.2) Feature extraction -----
 
 # This is equal to 26. This means that the `u` and `v` coordinates
@@ -385,10 +391,8 @@ def process_hash(gradient_grid, grid_step_h, grid_step_v):
         gradient_grid[i] /= scale_factor
 
     # Repeat Equation 15 and 16 until finished
-    iter_count = 0
-    while iter_count < 10:
+    for iter_count in range(1, HASH_ITER_LIMIT + 1):
         did_clip = False
-        iter_count += 1
 
         # Compute Equation 15.
         # The norm has a very tiny epsilon in order to prevent division by zero.
@@ -407,7 +411,8 @@ def process_hash(gradient_grid, grid_step_h, grid_step_v):
             val_i = gradient_grid[i] / l2_norm
             gradient_grid[i] = val_i
 
-            if val_i >= HASH_CLIP_CONST and iter_count < 10:
+            # Clip values that are too big, except during the last iteration
+            if val_i >= HASH_CLIP_CONST and iter_count != HASH_ITER_LIMIT:
                 if DEBUG_LOGGING:
                     print(f"idx {i} clipped")
                 gradient_grid[i] = HASH_CLIP_CONST
@@ -418,6 +423,7 @@ def process_hash(gradient_grid, grid_step_h, grid_step_v):
             break
     if DEBUG_LOGGING:
         print("iter done!")
+        print(gradient_grid)
 
     return gradient_grid
 
@@ -440,11 +446,7 @@ def compute_hash(filename):
     im = Image.open(filename)
     if im.mode != 'RGB':
         im = im.convert(mode='RGB')
-    # Preprocess into summed array
-    if not USE_NUMPY:
-        summed_pixels = preprocess_pixel_sum(im)
-    else:
-        summed_pixels = preprocess_pixel_sum_np(im)
+    summed_pixels = preprocess_pixel_sum_(im)
     (feature_grid, grid_step_h, grid_step_v) = \
         compute_feature_grid(summed_pixels, im.width, im.height)
     gradient_grid = compute_gradient_grid(feature_grid)
