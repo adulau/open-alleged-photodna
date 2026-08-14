@@ -3,8 +3,6 @@
 # ----- Import libraries, global settings -----
 
 from math import floor, sqrt
-import math
-from PIL import Image
 
 DEBUG_LOGGING = False
 
@@ -442,6 +440,8 @@ def hash_to_bytes(hash_in):
 
 
 def compute_hash(filename):
+    from PIL import Image
+
     # Load image
     im = Image.open(filename)
     if im.mode != 'RGB':
@@ -467,10 +467,21 @@ def compare_hashes(hash1, hash2, metric='euclidean'):
     raise ValueError(f'Unsupported metric: {metric}')
 
 
-def similarity_score(hash1, hash2):
-    distance = compare_hashes(hash1, hash2, metric='euclidean')
-    max_distance = sqrt(len(hash1) * (255 ** 2))
+def similarity_score(hash1, hash2, metric='euclidean'):
+    distance = compare_hashes(hash1, hash2, metric=metric)
+    if not hash1:
+        raise ValueError('Hashes must not be empty')
+
+    if metric == 'euclidean':
+        max_distance = sqrt(len(hash1) * (255 ** 2))
+    elif metric == 'manhattan':
+        max_distance = len(hash1) * 255
+    else:
+        # Let compare_hashes provide the public, consistent error message.
+        raise ValueError(f'Unsupported metric: {metric}')
+
     return 1.0 - (distance / max_distance)
+
 
 def compare_images(file1, file2, metric='euclidean'):
     hash1 = compute_hash(file1)
@@ -481,7 +492,7 @@ def compare_images(file1, file2, metric='euclidean'):
         'file2': file2,
         'metric': metric,
         'distance': distance,
-        'similarity': similarity_score(hash1, hash2),
+        'similarity': similarity_score(hash1, hash2, metric=metric),
         'hash1': hash1,
         'hash2': hash2,
     }
