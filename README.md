@@ -32,6 +32,12 @@ Alternatively, two images can be passed in order to compare their hashes:
 ./oaphotodna.py image1.jpg image2.jpg
 ```
 
+The comparison helpers are convenience utilities, not part of the PhotoDNA hash
+construction described in the paper. They report either Euclidean distance (the
+default) or Manhattan distance and a simple `[0, 1]` normalization against the
+maximum possible distance. That normalized value is not a Microsoft matching
+threshold and should not be treated as one.
+
 This code has also been validated against the leaked binary on the ImageNet 2012 validation set. There is commented-out code that checks this.
 
 ## Input preprocessing
@@ -100,5 +106,5 @@ At `+0xe8ae`, all the iterations are completed, but the hash is not yet converte
 
 ## References
 
-1. [White-Box Attacks on PhotoDNA Perceptual Hash Function](https://eprint.iacr.org/2026/486)
+1. [White-Box Attacks on PhotoDNA Perceptual Hash Function](https://www.usenix.org/system/files/usenixsecurity26-leblanc-albarel.pdf) ([IACR ePrint version](https://eprint.iacr.org/2026/486))
 2. [PhotoDNA and Limitations](https://www.hackerfactor.com/blog/index.php?/archives/931-PhotoDNA-and-Limitations.html)
