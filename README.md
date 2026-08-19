@@ -40,6 +40,42 @@ threshold and should not be treated as one.
 
 This code has also been validated against the leaked binary on the ImageNet 2012 validation set. There is commented-out code that checks this.
 
+### Optional Kvrocks vector search
+
+For collections larger than an in-process pairwise comparison, the optional
+`kvrocks_photodna` module stores hashes in a
+[Kvrocks Search vector index](https://kvrocks.apache.org/docs/kvrocks-search#vector).
+It uses `FLOAT32` vectors and the `L2` metric, so the returned vector score is
+the same Euclidean distance reported by the default local comparison. Neither
+Kvrocks nor `redis-py` is required for normal hashing and local comparisons.
+
+Kvrocks Search must be enabled in the Kvrocks server. Install `redis-py` only
+in the application that uses this integration, then create the index once and
+add/search hashes as needed:
+
+```sh
+python -m pip install redis
+```
+
+```python
+from kvrocks_photodna import KvrocksPhotoDNAIndex, connect_kvrocks
+from oaphotodna import compute_hash
+
+db = connect_kvrocks('redis://localhost:6666/0')
+index = KvrocksPhotoDNAIndex(db)
+index.create_index()  # provisioning step; omit after the index exists
+
+index.add('first-image', compute_hash('image1.jpg'), filename='image1.jpg')
+matches = index.search(compute_hash('query.jpg'), limit=10)
+for match in matches:
+    print(match['identifier'], match['distance'])
+```
+
+`HNSW` is the default index algorithm; pass `algorithm='FLAT'` to
+`create_index` for an exact flat search. An already configured redis-compatible
+client can be passed to `KvrocksPhotoDNAIndex`, avoiding any dependency on the
+connection helper.
+
 ## Input preprocessing
 
 All public code which calls the leaked binary uses the `ComputeRobustHash` function. The signature of this function is:
